@@ -1,0 +1,40 @@
+![CrowdProcess](https://crowdprocess.com/img/crowdprocess-logo-symbol.svg)
+# DBs @ CrowdProcess
+
+
+
+## CrowdProcess ?
+
+* HTML5 Distributed Computing Platform
+* Uses WebSockets to connect to WebWorkers
+
+![how it works](https://crowdprocess.com/img/dev-animation.gif)
+
+
+## CrowdProcess is IO heavy
+
+* Lots of data goes in;
+* We ship it to the Web Workers;
+* The workers compute the result;
+* We send the result to the user;
+
+
+## The workload is mainly RW 1/1
+
+* meaning we do as much reads as we do writes
+
+
+## When it started, I knew nothing
+
+![jon snow](http://www.quickmeme.com/img/2f/2fbfaf0c8356b6ec8fb02a3c0e51a48e7dd44d036c3e82384aac53ea059c1abb.jpg)
+
+
+## but who cares!
+
+![I know how to do it](http://i.imgur.com/6Mb3oI6.gif)
+
+
+
+### First prototypes:
+
+## MongoDB
