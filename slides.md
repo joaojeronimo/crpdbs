@@ -38,3 +38,33 @@
 ### First prototypes:
 
 ## MongoDB
+
+
+### Wow this is cool
+
+
+### Damn Indexes > RAM
+
+
+### no acks ?!
+
+
+* at least 3 servers for a replica set
+* at least 2 shards
+* at least 3 config servers
+
+![](http://docs.mongodb.org/manual/_images/sharded-cluster-production-architecture.png)
+
+
+## No fun with less than 8 servers
+
+
+## very messy deployment
+
+![messi](http://38.media.tumblr.com/7f1ad54ef1b3e185e46bb47a309ccac4/tumblr_mi95tlc8Vn1s5gv1ro1_500.gif)
+
+###### ba dum tssss
+###### I'll show myself out
+
+
+## The Redis Phase
