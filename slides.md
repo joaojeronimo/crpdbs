@@ -19,9 +19,24 @@
 * We send the result to the user;
 
 
-## The workload is mainly RW 1/1
+## The workload is mainly RW 1/2
 
-* meaning we do as much reads as we do writes
+meaning we do 2 writes for every 1 read
+
+
+## The typical data path:
+
+### user sends input data
+
+* **write** input to the DB
+* send input to worker
+* get result from worker
+* **write** result to the DB
+
+### user retrieves the results
+
+* **read** result from the DB
+* send it to user
 
 
 ## When it started, I knew nothing
@@ -55,20 +70,15 @@
 ![young again](http://www.troll.me/images/the-most-interesting-man-in-the-world/i-dont-always-use-nosql-but-when-i-do-i-feel-young-again.jpg)
 
 
-### Damn Indexes > RAM
+### oops, Indexes > RAM
 
 
-### no acks ?!
-
-
-* at least 3 servers for a replica set
-* at least 2 shards
-* at least 3 config servers
-
-![](http://docs.mongodb.org/manual/_images/sharded-cluster-production-architecture.png)
+### Default Write Concern Acknowledged ?
 
 
 ## No fun with less than 8 servers
+
+![](http://docs.mongodb.org/manual/_images/sharded-cluster-production-architecture.png)
 
 
 ## very messy deployment
@@ -160,13 +170,225 @@ If writes become slow, get a slave to persist for you
 * Distributed key-value store
 * Dynamo based (R, C)
 
+
 ### The good
 
 ...
 
+
 ### The bad
 
-* No decent drivers (pgte made the best one in JS)
-* Update = read, modify and write (not atomic)
-* Not very fast on comodity hardware
+* No decent drivers (then pgte made the best one for node)
+* Update = read, modify and write
 * No query language at all
+
+
+### The worst
+
+Running Riak on 3 c1.xlarge EC2 instances was very slow
+
+###### not using EBS of course, if we did we would be dead
+
+
+so we had a **cache layer** in front of Riak
+
+###### about 6 cache servers
+
+
+using
+
+
+redis!
+
+
+
+## Our infrastructure was complicated
+
+
+we had 50 private repositories on github
+
+
+about 7 different services running
+
+###### not counting metrics and telemetry services
+
+
+the platform crashed often
+
+###### too many things to manage, small team
+
+
+I have a theory on this
+
+
+## p < 2 * s
+
+###### p: number of people in your team
+###### s: number of services you're running
+
+you're in trouble
+
+
+
+## So then came the revolution
+
+
+### ditched AWS for Hetzner
+
+* No virtualization
+* Latest waswell 4 core CPU, 32GB of fast RAM
+* Most important, 2*240GB of very fast SSD
+
+
+databases <3 SSDs
+
+
+### Also ditched Riak for Cassandra
+
+
+Cassandra was about 2x faster for our use case, on both reads and writes
+
+
+didn't need a cache layer anymore!
+
+
+Went back to two monoliths, api-server and browser-server
+
+![](http://michaeltougher.com/wp-content/uploads/2014/02/2001space037.jpg)
+
+Massive simplification of the infrastructure
+
+
+## huge rewrite
+
+also, node.js -> Go
+
+
+So now CrowdProcess was simple, easy to manage and more performant
+
+
+The DB situation:
+
+* 3 node cluster
+* about 138k writes per second
+* about 114k reads per second
+* relational data is on PostgreSQL
+* overly written and accessed data is on Cassandra
+* rarely fails
+
+
+
+# Let's compare
+
+
+* write an object
+* retrieve object by it's key
+* retrieve an object by an attribute
+
+
+## MongoDB
+
+#### insert
+    db.foo.update({
+      _id: 'one',
+      attr: 2
+    });
+
+#### get by ID
+    db.find({_id: 'one'})
+
+#### get by attribute
+    db.find({attr: 2})
+
+
+## Redis
+
+#### insert
+    HSET one attr 2
+    HSET attrIndex 2 one # index it
+
+### get by ID
+    HGETALL one # attr: 2
+
+### get by attribute
+    HGET attrIndex 2 # => one
+    HGETALL one # => attr: 2
+
+
+## Riak
+
+    var modelOptions = {
+      bucket: 'numbers',
+      indexes: [
+        { key: 'attr' }
+      ]
+    };
+
+    var numbers = RiakModel(modelOptions);
+
+### create
+
+    numbes.save({_id: 'one', attr: 2}, callback);
+
+### get by ID
+
+    numbers.get('one', callback)
+
+### get by attribute
+
+    numbers.findAllByAttr(2, cb)
+
+
+## Cassandra
+
+### create
+    CREATE KEYSPACE everything;
+    CREATE TABLE everything.numbers (id VARCHAR, attr INT, PRIMARY KEY (id));
+    CREATE INDEX ON everything.numbers (attr); 
+
+    INSERT INTO everything.numbers (id, attr) VALUES ("one", 2);
+
+### get by ID
+
+    SELECT * FROM everything.numbers WHERE id = "one";
+
+### get by attribute
+
+    SELECT * FROM everything.numbers WHERE attr = 2; // fine under 1000 rows
+
+
+
+## My newest toy
+
+# n1ql.io
+
+
+hosted CouchBase with N1QL queries
+
+
+## API
+
+```bash
+> curl -X POST https://n1ql.io/one -d '{"attr": 2}'
+> curl -X GET https://n1ql.io/one
+{
+  "attr": 2
+}
+```
+
+### And of course, N1QL
+
+```bash
+> curl https://n1ql.io/?query='SELECT * FROM free WHERE attr = 2;'
+{
+  "attr": 2
+}
+```
+
+
+## but it's not ready
+http://www.couchbase.com/communities/q-and-a/how-query-curl
+
+
+
+# That's all folks!
