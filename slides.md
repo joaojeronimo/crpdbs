@@ -391,4 +391,42 @@ http://www.couchbase.com/communities/q-and-a/how-query-curl
 
 
 
+## my advice on choosing DBs for startups
+
+
+# Listen to your data
+
+
+if your project is a website or something **not IO intensive**, use a free 10.000 row PostgreSQL table from Heroku
+
+
+## if it's relational
+
+stick with **MySQL** or **PostgreSQL**
+
+They're fast, proven and have SQL
+
+
+## if it's key-value data
+
+**redis** until you can scale up
+
+**cassandra** after
+
+skip Riak and use Cassandra as a key-value store
+
+
+## for objects
+
+CouchDB
+
+MongoDB will take too much of your time when you have to scale
+
+
+## Metrics, Lucene Querying
+
+ElasticSearch
+
+
+
 # That's all folks!
